@@ -1,6 +1,6 @@
 import { DefaultEventsMap } from "@socket.io/component-emitter";
-import React, {useEffect, useRef} from "react";
-import io, { Socket } from 'socket.io-client';
+import React, {useEffect, useRef, useState} from "react";
+import { Socket, io } from 'socket.io-client';
 
 interface MyBoard{
     brushColor : string;
@@ -11,19 +11,19 @@ const Board: React.FC<MyBoard>= (props) => {
     
     const {brushColor, brushSize} = props;
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    //const [socket, setSocket] = useState(null);
-    let newSocket: Socket<DefaultEventsMap, DefaultEventsMap>;
+    const [socket, setSocket] = useState<Socket<DefaultEventsMap, DefaultEventsMap>|null>(null);
+    //let newSocket: Socket<DefaultEventsMap, DefaultEventsMap>;
 
     useEffect(()=>{
-        newSocket = io('http://localhost:5000');
+        const newSocket = io('http://localhost:5000');
         console.log(newSocket, "connected to socket");
-        //setSocket(newSocket);
+        setSocket(newSocket);
     },[]);
     //Draw
     useEffect(()=>{
-        if(newSocket){
+        if(socket){
             //event listener for receiveing canvas data from the socket
-            newSocket.on('canvasImage', (data)=>{
+            socket.on('canvasImage', (data)=>{
                 //create an image object from the data URL
                 const image = new Image();
                 image.src = data;
@@ -71,8 +71,8 @@ const Board: React.FC<MyBoard>= (props) => {
             const canvas = canvasRef.current;
             const dataURL = canvas?.toDataURL();
 
-            if(newSocket){
-                newSocket.emit('canvasImage', dataURL);
+            if(socket){
+                socket.emit('canvasImage', dataURL);
                 console.log("Drawing ended");
             }
             isDrawing = false;
@@ -102,7 +102,8 @@ const Board: React.FC<MyBoard>= (props) => {
         }
 
 
-    },[brushColor, brushSize, /*socket*/])
+    },[brushColor, brushSize, socket])
+
 
     return(
         //create a canvas
